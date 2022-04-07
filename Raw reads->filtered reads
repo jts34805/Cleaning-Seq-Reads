@@ -1,1 +1,31 @@
+library(tidyverse)
+colnames(output)<-c("Chromosome","Position","Reverse","Validation","UMI","Mapping Quality","Length","Sequence")
+#Output from trimming and aligning reads was made into a table with no column names, this is the order they are included 
+##"output" should be replaced with whatever indiv file names are referred to as 
+
+A = output
+A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7]
+## Very important step. reverse read position is determined incorrectly from input data, so using column 7 (length of Mu) we can adjust negative reverse reads (reads in rev direction) to be at the reverse end
+A = A[order(A[,1], A[,2], -A[,6]),-7]
+#Reorganizing the dataset, ordering in ascending chromosome and position, descending mapping quality
+
+A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10),]
+#First filtration step, requiring that the validation sequence is TATCTC or TGTCTC, which was a commonly found but slightly innacurate validation sequence
+#Also, this step requires that the mapping quality for the reads is greater than 10. This value is from the fastp bowtie alignment.
+
+A = A[,-c(4,6,7)]
+#Columns 4 (Validation sequence), 6(Mapping quality) and 7(Length) are no longer needed, so they are removed to simplify
+
+A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
+#This line creates a new column that combines info from columns 'chromosome', 'position', 'reverse', and 'UMI'
+#This will be used to get reads that can be turned into molecules
+
+A$Reads = table(A$ID)[A$ID]
+#first step to incorporate a count, going to be used for grouping
+
+A = unique(A[,-5])
+#This step filters to include only unique UMIs at each position, while removing the pasted column as it is no longer needed
+
+A=mutate(A,Direction=sign(Reverse))
+#This line creates a new column, which determines the direction of the insertion. Useful for pairing forward and reverse reads. 
 
