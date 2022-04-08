@@ -29,3 +29,5 @@ A = unique(A[,-5])
 A=mutate(A,Direction=sign(Reverse))
 #This line creates a new column, which determines the direction of the insertion. Useful for pairing forward and reverse reads. 
 
+
+
