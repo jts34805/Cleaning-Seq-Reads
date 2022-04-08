@@ -1,1 +1,7 @@
-
+#PWM for Validation Sequence
+library(ggseqlogo)
+PWM = read.table('bordersequences.txt')
+PWM = cbind(borders, t(matrix(unlist(strsplit(as.character(borders[,2]),'')), nrow=6)))
+PWM = t(sapply(c('A','C','G','T'), function(nt) { colSums(sweep(borders[,3:8] == nt, 1, borders[,1], '*')) }))
+PWM = sweep(borders, 2, colSums(borders), '/')
+Fig1a = ggseqlogo(borders, method = 'prob')
