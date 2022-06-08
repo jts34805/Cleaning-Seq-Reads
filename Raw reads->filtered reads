@@ -26,6 +26,24 @@ A$Reads = table(A$ID)[A$ID]
 A = unique(A[,-5])
 #This step filters to include only unique UMIs at each position, while removing the pasted column as it is no longer needed
 
+#####
+A$LigPos = A[,2] + A[,3]
+A$Direction = sign(A[,3])
+Labs = apply(gsub(' ', '', as.matrix(A[,c(1,4,6:7)])), 1, paste, collapse='_')
+A$Lab = Labs
+A2 = A[order(A[,4], A[,1], A[,7], A[,6]),]
+conflicts = which((abs(diff(A2[,6])) <= 10))
+c2 = c(1,which(diff(conflicts)>1)+1, length(conflicts))
+dels = NULL
+for (i in 1:(length(c2)-1)) {
+	z = conflicts[c2[i]]:(conflicts[c2[i+1]-1]+1)
+	rd = A2[z,]$Reads
+	A2[z[which(rd == max(rd))[1]],5] = sum(rd)
+	dels = c(dels, z[-which(rd == max(rd))[1]])
+}
+
+#####Not sure if needed, doing a test
+
 A=mutate(A,Direction=sign(Reverse))
 #This line creates a new column, which determines the direction of the insertion. Useful for pairing forward and reverse reads. 
 
