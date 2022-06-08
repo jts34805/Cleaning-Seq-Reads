@@ -19,7 +19,7 @@ colnames(doubles) = c('FwdDetections','RevDetections')
 use = which(rowSums(doubles[names(table(A2[,1])[order(-table(A2[,1]))]),] > 0) == 2)
 #Needed for line below to run, not sure why
 
-Fig1e = ggplot(data.frame(rank = 1:100, counts = table(A2[,1])[order(-table(A2[,1]))][use[1:100]]), aes(x = rank, y=counts.Freq)) + geom_bar(stat = 'identity')
+Fig1e = ggplot(data.frame(rank = 1:200, counts = table(A2[,1])[order(-table(A2[,1]))][use[1:100]]), aes(x = rank, y=counts.Freq)) + geom_bar(stat = 'identity')
 #Generates histogram of insertions
 
 Fig1f = ggplot(doubles[rowSums(doubles > 0) == 2,],aes(x=FwdDetections,y=RevDetections)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
