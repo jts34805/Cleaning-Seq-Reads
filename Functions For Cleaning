@@ -54,5 +54,19 @@ powerlaw = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(row
 return(Fig1f=Fig1f, Fig1e=Fig1e, Fig1d=Fig1d, powerlaw=powerlaw)
 }
 
-ReadCounts = list(NA14.11.LEAF,NA14.8.LEAF,NA14.9.LEAF,NA17.12.LEAF,NA17.12.POLLEN,NA17.22.LEAF, NA17.22.POLLEN,NA17.23.LEAF,NA17.23.POLLEN,NA17.24.LEAF,NA17.24.POLLEN)
+MergeFn=function(A) {
+A=select(A, genomelocation, UMI)
+A1=table(A$genomelocation[order(A[,1])])
+A1=as.data.frame(A1)
+rownames(A1)=A1[,1]
+#colnames(A1)=c("genomelocation","P1724")
+UMIcounts = list(L148 = L148counts, L149 = L149counts, L1411=L1411counts, L1712=L1712counts, P1712=P1712counts, L1722=L1722counts, P1722=P1722counts, L1723=L1723counts, P1723=P1723counts, L1724=L1724counts, P1724=P1724counts)
+allLocations = unique(unlist(lapply(UMIcounts, rownames)))
+UMImerge = matrix(unlist(lapply(UMIcounts, function(x) { x[allLocations, 2] })), ncol = length(UMIcounts))
+rownames(UMImerge) = allLocations
+colnames(UMImerge) = names(UMIcounts)
+UMImerge[is.na(UMImerge)] = 0
+
+ReadCounts = list(NA14.8.LEAF,NA14.9.LEAF,NA14.11.LEAF,NA17.12.LEAF,NA17.12.POLLEN,NA17.22.LEAF, NA17.22.POLLEN,NA17.23.LEAF,NA17.23.POLLEN,NA17.24.LEAF,NA17.24.POLLEN)
 CleanReadCounts = lapply(ReadCounts, CleanFn)
+MoleculeCounts=lapply(CleanReadCounts, MergeFn)
