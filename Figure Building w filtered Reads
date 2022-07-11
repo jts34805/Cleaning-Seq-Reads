@@ -44,26 +44,78 @@ powerlaw
 ##Updated Fig Building
 
 A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7]
-A = A[order(A[,1], A[,2], -A[,6]),-7]
-A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10),]   
-A = A[,-c(4,6,7)]
-A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
-A$Reads = table(A$ID)[A$ID]
-A = unique(A[,-5])
-A$Direction = sign(A[,3])
-A = A[A[,5] > 1,]
-Ab = unique(A[,1:3])
-Ab = cbind(Ab, abs(c(diff(Ab[,2]),10^6)))
-thresh = 20
-Ab = Ab[(Ab[,4] <= thresh) | (c(thresh*2, Ab[-nrow(Ab),4]) <= thresh),]
-doubles = which(Ab[,4] > thresh)
-dists = data.frame(dist = Ab[doubles,2] - Ab[doubles - 1,2], orientation = c('Reverse', 'Same')[1 + (Ab[doubles,3] == Ab[doubles - 1,3])])#[diff(c(0,doubles)) == 2,]
-A2 = A
-A2 = data.frame(pos = paste(A2[,1], A2[,2] - 9*(A2[,3] < 0), sep = '_'), orientation = sign(A2[,3]))
-doubles = data.frame(fwd = table(A2[A2[,2]==1,1]), rev = table(A2[A2[,2]==-1,1]))
-rownames(doubles) = doubles[,1]
-doubles = doubles[,c(2,4)]
-colnames(doubles) = c('fwd','rev')
-powerlaw3 = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(rowSums(doubles) > x) }),val=rowSums(doubles)), aes(x=val,y=Pval)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+ A = A[order(A[,1], A[,2], -A[,6]),-7]
+ A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10),]   
+ # Require validation sequence to match TIR and a mapping quality greater than 10
+ # Bz1 -->
+ z1=A[(A[,1] == 'CM004356.2') & (A[,2] == 11958559),]
+ z2=A[(A[,1] == 'CM004356.2') & (A[,2] == 11958568),]
+ 
+ Ax = A[,-6]
+ A = A[,-c(4,6,7)]
+ 
+ A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
+ A$Reads = table(A$ID)[A$ID]
+ A = unique(A[,-5])
+ 
+ 
+ 
+ Mode <- function(x) {
+     ux <- unique(x)
+     ux[which.max(tabulate(match(x, ux)))]
+ }
+ 
+ A$LigPos = A[,2] + A[,3]
+ A$Direction = sign(A[,3])
+ Labs = apply(gsub(' ', '', as.matrix(A[,c(1,4,6:7)])), 1, paste, collapse='_')
+ A$Lab = Labs
+ A2 = A[order(A[,4], A[,1], A[,7], A[,6]),]
+ conflicts = which((abs(diff(A2[,6])) <= 10))
+ c2 = c(1,which(diff(conflicts)>1)+1, length(conflicts))
+ dels = NULL
+ for (i in 1:(length(c2)-1)) {
+     z = conflicts[c2[i]]:(conflicts[c2[i+1]-1]+1)
+     rd = A2[z,]$Reads
+     A2[z[which(rd == max(rd))[1]],5] = sum(rd)
+     dels = c(dels, z[-which(rd == max(rd))[1]])
+ }
+ 100*sum(A2$Reads[dels])/sum(A$Reads)
+[1] 0.4711303
+ A2 = A2[-dels,]
+ 100*(nrow(A)-nrow(A2))/nrow(A)
+[1] 3.206392
+ A = A2[order(A2[,1],A2[,2],-A2$Direction),c(1,2,7,4,5)]
 
+
+ A = A[A[,5] > 1,]
+ 
+ 
+ Ab = unique(A[,1:3])
+ Ab = cbind(Ab, abs(c(diff(Ab[,2]),10^6)))
+ thresh = 20
+ Ab = Ab[(Ab[,4] <= thresh) | (c(thresh*2, Ab[-nrow(Ab),4]) <= thresh),]
+ doubles = which(Ab[,4] > thresh)
+ dists = data.frame(dist = Ab[doubles,2] - Ab[doubles - 1,2], orientation = c('Reverse', 'Same')[1 + (Ab[doubles,3] == Ab[doubles - 1,3])])#[diff(c(0,doubles)) == 2,]
+ Fig1d = ggplot(dists, aes(x=dist, fill=orientation)) + geom_bar(stat='count')
+ 
+ 
+ A2 = A
+ A2 = data.frame(pos = factor(paste(A2[,1], A2[,2] - 9*(A2[,3] < 0), sep = '_')), orientation = sign(A2[,3]))
+ doubles = data.frame(fwd = table(A2[A2[,2]==1,1]), rev = table(A2[A2[,2]==-1,1]))
+ rownames(doubles) = doubles[,1]
+ doubles = doubles[,c(2,4)]
+ colnames(doubles) = c('fwd','rev')
+ 
+ use = which(rowSums(doubles[names(table(A2[,1])[order(-table(A2[,1]))]),] > 0) == 2)
+ Fig1e = ggplot(data.frame(rank = 1:100, counts = table(A2[,1])[order(-table(A2[,1]))][use[1:100]]), aes(x = rank, y=counts.Freq)) + geom_bar(stat = 'identity')
+ 
+ Fig1f = ggplot(doubles[rowSums(doubles > 0) == 2,],aes(x=fwd,y=rev)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+
+ Fig1f
+ Fig1e
+ Fig1d
+ 
+ doubles=doubles[rowSums(doubles > 0) == 2,]
+ powerlaw3 = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(rowSums(doubles) > x) }),val=rowSums(doubles)), aes(x=val,y=Pval)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+powerlaw3 + geom_abline(intercept = log(nrow(doubles)+1700, 10), slope = -.8, color='red', linetype = 'dashed', size=1.1)
 
