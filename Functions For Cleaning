@@ -33,3 +33,26 @@ Ab = cbind(Ab, abs(c(diff(Ab[,2]),10^6)))
 thresh = 20
 Ab = Ab[(Ab[,4] <= thresh) | (c(thresh*2, Ab[-nrow(Ab),4]) <= thresh),]
 }
+
+
+
+BuildFigs=function(A) {
+doubles = which(Ab[,4] > thresh)
+dists = data.frame(dist = Ab[doubles,2] - Ab[doubles - 1,2], orientation = c('Reverse', 'Same')[1 + (Ab[doubles,3] == Ab[doubles - 1,3])])#[diff(c(0,doubles)) == 2,]
+Fig1d = ggplot(dists, aes(x=dist, fill=orientation)) + geom_bar(stat='count')
+A2 = A
+A2 = data.frame(pos = factor(paste(A2[,1], A2[,2] - 9*(A2[,3] < 0), sep = '_')), orientation = sign(A2[,3]))
+doubles = data.frame(fwd = table(A2[A2[,2]==1,1]), rev = table(A2[A2[,2]==-1,1]))
+rownames(doubles) = doubles[,1]
+doubles = doubles[,c(2,4)]
+colnames(doubles) = c('fwd','rev')
+use = which(rowSums(doubles[names(table(A2[,1])[order(-table(A2[,1]))]),] > 0) == 2)
+Fig1e = ggplot(data.frame(rank = 1:100, counts = table(A2[,1])[order(-table(A2[,1]))][use[1:100]]), aes(x = rank, y=counts.Freq)) + geom_bar(stat = 'identity')
+Fig1f = ggplot(doubles[rowSums(doubles > 0) == 2,],aes(x=fwd,y=rev)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+doubles=doubles[rowSums(doubles > 0) == 2,]
+powerlaw = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(rowSums(doubles) > x) }),val=rowSums(doubles)), aes(x=val,y=Pval)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+return(Fig1f=Fig1f, Fig1e=Fig1e, Fig1d=Fig1d, powerlaw=powerlaw)
+}
+
+ReadCounts = list(NA14.11.LEAF,NA14.8.LEAF,NA14.9.LEAF,NA17.12.LEAF,NA17.12.POLLEN,NA17.22.LEAF, NA17.22.POLLEN,NA17.23.LEAF,NA17.23.POLLEN,NA17.24.LEAF,NA17.24.POLLEN)
+CleanReadCounts = lapply(ReadCounts, CleanFn)
