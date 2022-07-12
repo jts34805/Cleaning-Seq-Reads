@@ -32,6 +32,7 @@ Ab = unique(A[,1:3])
 Ab = cbind(Ab, abs(c(diff(Ab[,2]),10^6)))
 thresh = 20
 Ab = Ab[(Ab[,4] <= thresh) | (c(thresh*2, Ab[-nrow(Ab),4]) <= thresh),]
+return(A)
 }
 
 
@@ -55,6 +56,7 @@ return(Fig1f=Fig1f, Fig1e=Fig1e, Fig1d=Fig1d, powerlaw=powerlaw)
 }
 
 MergeFn=function(A) {
+colnames(A)=
 A=select(A, genomelocation, UMI)
 A1=table(A$genomelocation[order(A[,1])])
 A1=as.data.frame(A1)
