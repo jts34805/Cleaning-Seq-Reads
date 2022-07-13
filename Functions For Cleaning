@@ -48,15 +48,15 @@ rownames(doubles) = doubles[,1]
 doubles = doubles[,c(2,4)]
 colnames(doubles) = c('fwd','rev')
 use = which(rowSums(doubles[names(table(A2[,1])[order(-table(A2[,1]))]),] > 0) == 2)
-Fig1e = ggplot(data.frame(rank = 1:100, counts = table(A2[,1])[order(-table(A2[,1]))][use[1:100]]), aes(x = rank, y=counts.Freq)) + geom_bar(stat = 'identity')
-Fig1f = ggplot(doubles[rowSums(doubles > 0) == 2,],aes(x=fwd,y=rev)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+Fig1e = ggplot(data.frame(rank = 1:100, counts = table(A2[,1])[order(-table(A2[,1]))][use[1:100]]), aes(x = rank, y=counts.Freq))+xlab('Rank')+ylab('Counts') + geom_bar(stat = 'identity')
+Fig1f = ggplot(doubles[rowSums(doubles > 0) == 2,],aes(x=fwd,y=rev)) +xlab('Forward Detections')+ylab('Reverse Detections') + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic() 
 doubles=doubles[rowSums(doubles > 0) == 2,]
-powerlaw = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(rowSums(doubles) > x) }),val=rowSums(doubles)), aes(x=val,y=Pval)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+powerlaw = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(rowSums(doubles) > x) }),val=rowSums(doubles)), aes(x=val,y=Pval))+xlab('Times an insertion was detected')+ylab('Cumulative Distribution Function') + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
 return(Fig1f=Fig1f, Fig1e=Fig1e, Fig1d=Fig1d, powerlaw=powerlaw)
 }
 
 MergeFn=function(A) {
-colnames(A)=
+#colnames(A)=
 A=select(A, genomelocation, UMI)
 A1=table(A$genomelocation[order(A[,1])])
 A1=as.data.frame(A1)
