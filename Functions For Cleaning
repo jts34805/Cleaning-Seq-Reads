@@ -1,4 +1,5 @@
 CleanFn=function(A) {
+  colnames(A)<-c("Chromosome","Position","Reverse","Validation","UMI","Mapping Quality","Length","Sequence")
   A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7]
   A = A[order(A[,1], A[,2], -A[,6]),-7]
   A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10),]   
