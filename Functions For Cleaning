@@ -1,3 +1,4 @@
+library(tidyverse)
 CleanFn=function(A) {
   colnames(A)<-c("Chromosome","Position","Reverse","Validation","UMI","Mapping Quality","Length","Sequence")
   A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7]
@@ -33,6 +34,7 @@ A = A2[order(A2[,1],A2[,2],-A2$Direction),c(1,2,7,4,5)]
 A = A[A[,5] > 1,]
 Ab = unique(A[,1:3])
 Ab = cbind(Ab, abs(c(diff(Ab[,2]),10^6)))
+
 return(Ab)
 }
 
