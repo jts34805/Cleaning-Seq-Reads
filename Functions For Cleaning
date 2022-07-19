@@ -1,15 +1,17 @@
-CleanFn=function(A) {A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7]
-A = A[order(A[,1], A[,2], -A[,6]),-7]
-A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10),] 
-A = A[,-c(4,6,7)]
+CleanFn=function(A) {
+  A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7]
+  A = A[order(A[,1], A[,2], -A[,6]),-7]
+  A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10),]   
+  # Require validation sequence to match TIR and a mapping quality greater than 10
 
-A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
-A$Reads = table(A$ID)[A$ID]
-A = unique(A[,-5])
-Mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
+
+
+  A = A[,-c(4,6,7)]
+
+  A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
+  A$Reads = table(A$ID)[A$ID]
+  A = unique(A[,-5])
+
 
 A$LigPos = A[,2] + A[,3]
 A$Direction = sign(A[,3])
@@ -30,14 +32,14 @@ A = A2[order(A2[,1],A2[,2],-A2$Direction),c(1,2,7,4,5)]
 A = A[A[,5] > 1,]
 Ab = unique(A[,1:3])
 Ab = cbind(Ab, abs(c(diff(Ab[,2]),10^6)))
-thresh = 20
-Ab = Ab[(Ab[,4] <= thresh) | (c(thresh*2, Ab[-nrow(Ab),4]) <= thresh),]
-return(A)
+return(Ab)
 }
 
 
 
-BuildFigs=function(A) {
+BuildFigs=function(Ab) {
+thresh = 20
+Ab = Ab[(Ab[,4] <= thresh) | (c(thresh*2, Ab[-nrow(Ab),4]) <= thresh),]
 doubles = which(Ab[,4] > thresh)
 dists = data.frame(dist = Ab[doubles,2] - Ab[doubles - 1,2], orientation = c('Reverse', 'Same')[1 + (Ab[doubles,3] == Ab[doubles - 1,3])])#[diff(c(0,doubles)) == 2,]
 Fig1d = ggplot(dists, aes(x=dist, fill=orientation)) + geom_bar(stat='count')
@@ -52,7 +54,6 @@ Fig1e = ggplot(data.frame(rank = 1:100, counts = table(A2[,1])[order(-table(A2[,
 Fig1f = ggplot(doubles[rowSums(doubles > 0) == 2,],aes(x=fwd,y=rev)) +xlab('Forward Detections')+ylab('Reverse Detections') + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic() 
 doubles=doubles[rowSums(doubles > 0) == 2,]
 powerlaw = ggplot(data.frame(Pval=sapply(rowSums(doubles), function(x) { sum(rowSums(doubles) > x) }),val=rowSums(doubles)), aes(x=val,y=Pval))+xlab('Times an insertion was detected')+ylab('Cumulative Distribution Function') + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
-return(Fig1f=Fig1f, Fig1e=Fig1e, Fig1d=Fig1d, powerlaw=powerlaw)
 }
 
 MergeFn=function(A) {
