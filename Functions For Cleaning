@@ -1,3 +1,10 @@
+files=directory("Desktop/Leaf and Pollen TXT Files")
+InputData=ls()
+for (f in files) {
+     InputData[[sub('.txt','',f)]]=read.table(paste("~/Desktop/Leaf and Pollen TXT Files",f, sep="/"), quote="\"", comment.char="")
+ }
+
+
 library(tidyverse)
 CleanFn=function(A) {
   colnames(A)<-c("Chromosome","Position","Reverse","Validation","UMI","Mapping Quality","Length","Sequence")
