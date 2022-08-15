@@ -1,3 +1,9 @@
+#Create Inputdata.RDA File
+files=dir("~/Desktop/Updated TXT Files")
+InputData=ls()
+for (f in files) {
+     InputData[[sub('.txt','',f)]]=read.table(paste("~/Desktop/Updated TXT Files",f, sep="/"), quote="\"", comment.char="")
+ }
 #Load Inputdata.RDA
 
 load('~/Desktop/Nelms Lab Research/MuSeq Data/Nelms Lab R Project/InputData/InputData.rda')
