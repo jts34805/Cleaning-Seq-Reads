@@ -1,0 +1,116 @@
+#Load Inputdata.RDA
+
+load('~/Desktop/Nelms Lab Research/MuSeq Data/Nelms Lab R Project/InputData/InputData.rda')
+
+##MergeFn:
+MergeFn = function(A) {
+	table(paste(A$Chromosome, A$Position, A$Direction))
+}
+
+CleanFn = function(A) {
+	colnames(A)<-c("Chromosome","Position","PositionRev","Reverse","Validation","UMI","MAPQ","Length","Sequence")
+	A$Position[A$Reverse < 0] = A$PositionRev[A$Reverse < 0] - A$Reverse[A$Reverse < 0] - 1  # Shift position to edge of TIR rather than left-most base
+	A = A[(A$Validation %in% c('TATCTC','TGTCTC')) & (A$MAPQ >= 10), -c(3,5,7:9)]  # Require validation sequence to match TIR and a mapping quality greater than 10
+	
+	A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
+	A$Reads = table(A$ID)[A$ID]
+	A = unique(A[,-5])  # Collapse reads with identical ligation site and UMI
+
+	A$Direction = sign(A[,3])
+	A = A[order(A[,1],A[,2],-A$Direction),c(1,2,6,5)]
+	return(A)
+}
+
+
+CleanFn2 = function(A) {
+	colnames(A)<-c("Chromosome","Position","Reverse","Validation","UMI","Mapping Quality","Length","Sequence")
+	A[A[,3] < 0,2] = A[A[,3] < 0,2] + A[A[,3] < 0,7] - 1  # Shift position to edge of TIR rather than left-most base
+	A = A[(A[,4] %in% c('TATCTC','TGTCTC')) & (A[,6] >= 10), -c(4,6:8)]  # Require validation sequence to match TIR and a mapping quality greater than 10
+	
+	A$ID = apply(gsub(' ', '', as.matrix(A)), 1, paste, collapse = '_')
+	A$Reads = table(A$ID)[A$ID]
+	A = unique(A[,-5])  # Collapse reads with identical ligation site and UMI
+
+	A$Direction = sign(A[,3])
+	A = A[order(A[,1],A[,2],-A$Direction),c(1,2,6,5)]
+	return(A)
+}
+
+nearestMu = function(A = MoleculeCounts, mx = 20) {
+	Af = A[grepl(' 1$', rownames(A)),]
+	Ar = A[grepl(' -1$', rownames(A)),]
+	if (!is.null(dim(Af))) { Af = rowSums(Af) }
+	if (!is.null(dim(Ar))) { Ar = rowSums(Ar) }
+	names(Af) = sub(' 1$', '', names(Af))
+	names(Ar) = gsub(' -1$', '', names(Ar))
+	
+	locs = data.frame(Chr = sub(' .+', '', names(Af)), Pos = as.numeric(sub('.+ ', '', names(Af))))
+	locs2 = data.frame(Chr = rep(locs[,1], each = mx + 1), Pos = rep(locs[,2], each = mx + 1) + rep(0:mx))
+	locs2 = unique(locs2)
+	locs2 = locs2[order(locs2[,1],locs2[,2]),]
+	locs = paste(locs2[,1], gsub(' ', '', format(locs2[,2], scientific=F)), sep = ' ')
+	
+	Af2 = Af[locs]
+	Af2[is.na(Af2)] = 0
+	Ar2 = Ar[locs]
+	Ar2[is.na(Ar2)] = 0
+	
+	outFF = rep(0, length = mx + 1)
+	outRR = outFF
+	outFR = outFF
+	outRF = outFF
+	for (i in which((Af2+Ar2) > 0)) {
+		outFF = outFF + c(choose(Af2[i],2), Af2[i]*Af2[(i+1):(i+mx)])
+		outRR = outRR + c(choose(Ar2[i],2), Ar2[i]*Ar2[(i+1):(i+mx)])
+		outFR = outFR + Af2[i]*Ar2[i:(i+mx)]
+		outRF = outRF + Ar2[i]*Af2[i:(i+mx)]
+	}
+	out = cbind(outFF, outRR, outFR, outRF)
+	colnames(out) = sub('out', '', colnames(out))
+	rownames(out) = 0:mx
+	return(out)
+}
+
+#Code for functions from: https://github.com/jts34805/Cleaning-Seq-Reads/edit/main/Functions%20For%20Cleaning
+#Run cleaning Function (RawData---> filtered data)
+CleanData=lapply(InputData, CleanFn)
+
+
+#Turn Clean Data into 12 datasets, each consisting of Molecule Counts per genome location (Chromosome, Position, and Direction)
+MergingData=lapply(CleanData,MergeFn)
+
+allLocations = unique(unlist(lapply(MergingData, names)))
+MoleculeCounts = matrix(unlist(lapply(MergingData, function(x) { x[allLocations] })), ncol = length(MergingData))
+rownames(MoleculeCounts) = allLocations
+colnames(MoleculeCounts) = names(MergingData)
+MoleculeCounts[is.na(MoleculeCounts)] = 0
+
+
+Mudists = nearestMu(MoleculeCounts)
+barplot(t(Mudists[-1,]), legend = T, col = c('#444444', '#888888', '#DD1111', '#BBBBBB'))
+
+
+
+
+gLocs = t(matrix(unlist(strsplit(rownames(MoleculeCounts), ' ')), nrow=3))
+gLocs = data.frame(Chr = gLocs[,1], Pos = as.numeric(gLocs[,2]) + 4*as.numeric(gLocs[,3]), Dir = gLocs[,3])
+MuCountsF = MoleculeCounts[match(unique(apply(cbind(gLocs[,1:2],'1'), 1, paste, collapse='_')), apply(gLocs, 1, paste, collapse='_')),]
+MuCountsR = MoleculeCounts[match(unique(apply(cbind(gLocs[,1:2],'-1'), 1, paste, collapse='_')), apply(gLocs, 1, paste, collapse='_')),]
+MuCountsF[is.na(MuCountsF)] = 0
+rownames(MuCountsF) = gsub(' ', '', unique(apply(gLocs[,1:2], 1, paste, collapse='_')))
+MuCountsR[is.na(MuCountsR)] = 0
+rownames(MuCountsR) = gsub(' ', '', unique(apply(gLocs[,1:2], 1, paste, collapse='_')))
+
+
+MuCountsAll = MuCountsR + MuCountsF
+
+plotPMF = function(i, thresh = 0, paired = T) {
+	X = MuCountsAll[(MuCountsF[,i] > (paired - 1)) & (MuCountsR[,i] > (paired - 1)) & (rowSums(MuCountsAll > thresh) == 1),i]
+	X = table(X)
+	X = X[length(X):2]
+	plot(names(X),cumsum(X), pch = 19, log='xy')
+}
+par(mfrow=c(2,4))
+for (i in 4:11) { plotPMF(i) }
+
+
