@@ -1,6 +1,6 @@
 #Create Inputdata.RDA File
 files=dir("~/Desktop/Updated TXT Files")
-InputData=ls()
+InputData=list()
 for (f in files) {
      InputData[[sub('.txt','',f)]]=read.table(paste("~/Desktop/Updated TXT Files",f, sep="/"), quote="\"", comment.char="")
  }
