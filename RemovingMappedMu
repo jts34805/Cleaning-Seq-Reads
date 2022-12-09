@@ -1,0 +1,4 @@
+ml BLAST
+makeblastdb -in Zm-W22-REFERENCE-NRGENE-2.0.fa -dbtype nucl
+blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt
+blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt  -max_target_seqs 1000
