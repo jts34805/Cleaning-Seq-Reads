@@ -2,3 +2,6 @@ ml BLAST+
 makeblastdb -in Zm-W22-REFERENCE-NRGENE-2.0.fa -dbtype nucl
 blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt
 blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt  -max_target_seqs 1000
+
+blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt -evalue 1 -word_size 11 -penalty -3 -reward 2
+blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIRReverse -out blastTHIS.txt -evalue 1 -word_size 11 -penalty -3 -reward 2
