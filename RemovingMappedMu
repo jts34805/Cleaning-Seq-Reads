@@ -5,3 +5,13 @@ blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt  -max_
 
 blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIR -out blastTHIS.txt -evalue 1 -word_size 11 -penalty -3 -reward 2
 blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIRReverse -out blastTHIS.txt -evalue 1 -word_size 11 -penalty -3 -reward 2
+
+
+#Used blast parameters
+blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query TIRSeq -out testing.txt -evalue 10 -word_size 10 -outfmt 7
+#Output testing.txt to R for analysis
+#IN R
+
+BLAST=testing.txt
+Blast=Blast[,2:12]
+colnames(Blast)=c("chromosome","%Identity", "alignmentlength", "mismatches", "gap_opens","querystart","queryend","subjectstart","subjectend","evalue", "bitscore")
