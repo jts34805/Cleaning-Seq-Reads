@@ -8,10 +8,17 @@ blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query MuTIRReverse -out blastTHIS.txt
 
 
 #Used blast parameters
-blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query TIRSeq -out testing.txt -evalue 10 -word_size 10 -outfmt 7
+blastn -db Zm-W22-REFERENCE-NRGENE-2.0.fa -query TIRSeq -out testing.txt -evalue 20 -word_size 10 -outfmt 7
 #Output testing.txt to R for analysis
 #IN R
+library(tidyverse)
+MappedMu=testing.txt
+MappedMu=MappedMu[,2:12]
+colnames(MappedMu)=c("chromosome","%Identity", "alignmentlength", "mismatches", "gap_opens","querystart","queryend","subjectstart","subjectend","evalue", "bitscore")
+MappedMu=select(MappedMu, c("chromosome","%Identity","alignmentlength","subjectstart","subjectend","evalue","bitscore"))
+MappedMu1=paste(MappedMu[,1],MappedMu[,8])
+MappedMu1=as.data.frame(MappedMu1)
+MappedMu=cbind(MappedMu,MappedMu1)
+MappedMu=select(MappedMu, "%Identity":"Position")
 
-BLAST=testing.txt
-Blast=Blast[,2:12]
-colnames(Blast)=c("chromosome","%Identity", "alignmentlength", "mismatches", "gap_opens","querystart","queryend","subjectstart","subjectend","evalue", "bitscore")
+
