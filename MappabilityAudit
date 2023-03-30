@@ -1,0 +1,8 @@
+#in local terminal#
+
+conda install -c bioconda genmap
+
+./genmap index -F /Desktop/Coding/Zm* -I /Desktop/Coding/Index
+
+./genmap map -K 150 -I /Desktop/Coding/Index -O /Desktop/Coding/Mapping  -r
+
