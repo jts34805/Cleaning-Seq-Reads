@@ -1,8 +1,16 @@
-#in local terminal#
+#in local terminal# /Desktop/Coding
 
 conda install -c bioconda genmap
 
-./genmap index -F /Desktop/Coding/Zm* -I /Desktop/Coding/Index
+genmap index -F /Desktop/Coding/Zm* -I /Desktop/Coding/Index
 
-./genmap map -K 150 -I /Desktop/Coding/Index -O /Desktop/Coding/Mapping  -r
+##Makes Wig file
+
+genmap map -K 150 -I /Desktop/Coding/Index -O /Desktop/Coding/Wig  -w
+
+##Install wigToBigWig online
+
+wigToBigWig Wig.wig Wig.chrom.sizes Mappability.bw
+
+##import bigwig file into IGV
 
