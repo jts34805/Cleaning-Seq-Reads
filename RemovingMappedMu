@@ -23,6 +23,27 @@ MappedMu=select(MappedMu, "%Identity":"Position")
 
 ##Using code from MuSeq code BN edited 09-7-2022(1).R
 
-#Generate MuCountsAll using above code
+#Generate MuCountsAll using above code, or Cleaning Reads 4.0\
+
+#Find Forward and Reverse Mu insertions that are present in the inactive lines
+#Forward
+InactiveMuF=MuCountsF[,2:4]
+InactiveMuF$Presence=rowSums(InactiveMuF)
+InactiveMuF=filter(InactiveMuF, Presence>0)
+ReferenceF=filter(InactiveMuF, Presence>5)
+
+#Reverse
+InactiveMuR=MuCountsR[,2:4]
+InactiveMuR$Presence=rowSums(InactiveMuR)
+InactiveMuR=filter(InactiveMuR, Presence>0)
+ReferenceR=filter(InactiveMuR, Presence>5)
+
+#Create List of Genome locations in the reference with Mu insertions
+RefLocs=c(rownames(ReferenceF),rownames(ReferenceR))
+
+
+
+
+
 
 
