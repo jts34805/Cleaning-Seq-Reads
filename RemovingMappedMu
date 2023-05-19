@@ -21,4 +21,8 @@ MappedMu1=as.data.frame(MappedMu1)
 MappedMu=cbind(MappedMu,MappedMu1)
 MappedMu=select(MappedMu, "%Identity":"Position")
 
+##Using code from MuSeq code BN edited 09-7-2022(1).R
+
+#Generate MuCountsAll using above code
+
 
