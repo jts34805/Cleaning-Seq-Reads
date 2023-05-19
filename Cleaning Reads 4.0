@@ -1,0 +1,197 @@
+##MergeFn:
+MergeFn = function(A) {
+	table(paste(A$Chromosome, A$Position, A$Direction))
+}
+
+nearestMu = function(A = MoleculeCounts, mx = 12) {
+	Af = A[grepl(' 1$', rownames(A)),]
+	Ar = A[grepl(' -1$', rownames(A)),]
+	if (!is.null(dim(Af))) { Af = rowSums(Af) }
+	if (!is.null(dim(Ar))) { Ar = rowSums(Ar) }
+	names(Af) = sub(' 1$', '', names(Af))
+	names(Ar) = gsub(' -1$', '', names(Ar))
+	
+	locs = unique(c(names(Af), names(Ar)))
+	locs = data.frame(Chr = sub(' .+', '', locs), Pos = as.numeric(sub('.+ ', '', locs)))
+	locs2 = data.frame(Chr = rep(locs[,1], each = 2*mx + 1), Pos = rep(locs[,2], each = 2*mx + 1) + rep(-mx:mx))
+	locs2 = unique(locs2)
+	locs2 = locs2[order(locs2[,1],locs2[,2]),]
+	locs = paste(locs2[,1], gsub(' ', '', format(locs2[,2], scientific=F)), sep = ' ')
+	
+	Af2 = Af[locs]
+	Af2[is.na(Af2)] = 0
+	Ar2 = Ar[locs]
+	Ar2[is.na(Ar2)] = 0
+	
+	outFF = rep(0, length = 2*mx + 1)
+	outFR = outFF
+	for (i in which((Af2+Ar2) > 0)) {
+		outFF = outFF + Af2[i]*c(Af2[(i-mx):(i-1)], Af2[i] - 1, Af2[(i+1):(i+mx)]) + Ar2[i]*c(Ar2[(i+mx):(i+1)], Ar2[i] - 1, Ar2[(i-1):(i-mx)])
+		outFR = outFR + Af2[i]*Ar2[(i-mx):(i+mx)] + Ar2[i]*Af2[(i+mx):(i-mx)]
+	}
+	out = cbind(outFF, outFR)
+	out = out/(sum(Af2+Ar2)*(sum(Af2+Ar2)-1))
+	colnames(out) = c('same', 'reverse')
+	rownames(out) = -mx:mx
+	return(out)
+}
+
+
+nearestMu2 = function(A = MoleculeCounts, mx = 12, thresh = 0) {
+	A = A[!grepl('unknown',rownames(A)),]
+	locs = data.frame(Chr = sub(' .+', '', rownames(A)), Pos = as.numeric(sub('.+ ', '', sub(' -1$', '', sub(' 1$', '', rownames(A))))), Dir = sub('.+ ', '', rownames(A)))
+	
+	chrs = unique(locs[,1])
+	outFF = rowSums(sapply(1:ncol(A), function(j) {
+		xx = locs[A[,j] > thresh,]
+		rowSums(sapply(chrs, function(l2) {
+			pos = xx[(xx$Chr == l2) & (xx$Dir == '1'),2]
+			out = sapply(-mx:mx, function(i) { sum((pos+i) %in% pos) })
+			pos = xx[(xx$Chr == l2) & (xx$Dir == '-1'),2]
+			out2 = sapply(-mx:mx, function(i) { sum((pos+i) %in% pos) })
+			out+out2
+		}))
+	}))
+	
+	outFR = rowSums(sapply(1:ncol(A), function(j) {
+		xx = locs[A[,j] > thresh,]
+		rowSums(sapply(chrs, function(l2) {
+			pos = xx[(xx$Chr == l2) & (xx$Dir == '1'),2]
+			rev = xx[(xx$Chr == l2) & (xx$Dir == '-1'),2]
+			sapply(-mx:mx, function(i) { sum((pos+i) %in% rev) })
+		}))
+	}))
+
+	out = cbind(outFF, outFR)
+	out[mx+1,] = c(NA,NA)
+	colnames(out) = c('same', 'reverse')
+	rownames(out) = -mx:mx
+	return(out)
+}
+
+#Code for functions from: https://github.com/jts34805/Cleaning-Seq-Reads/edit/main/Functions%20For%20Cleaning
+#Run cleaning Function (RawData---> filtered data)
+load('~/downloads/CleanData_220830.rda')
+
+ReadsPerUMI = unlist(lapply(CleanData, function(x) { mean(x[,4]) }))
+
+CleanData2 = lapply(CleanData, function(xx) { xx[xx$Reads >= mean(xx$Reads)/5,] })
+
+
+#Turn Clean Data into 12 datasets, each consisting of Molecule Counts per genome location (Chromosome, Position, and Direction)
+MergingData=lapply(CleanData2,MergeFn)
+
+allLocations = unique(unlist(lapply(MergingData, names)))
+MoleculeCounts = matrix(unlist(lapply(MergingData, function(x) { x[allLocations] })), ncol = length(MergingData))
+rownames(MoleculeCounts) = allLocations
+colnames(MoleculeCounts) = names(MergingData)
+MoleculeCounts[is.na(MoleculeCounts)] = 0
+
+
+Mudists = nearestMu(MoleculeCounts[,-c(1:4)])
+barplot(t(Mudists), legend = T, col = c('#444444', '#DD1111'), border=NA, space=0, las = 1, xaxt='n', xlab = 'Distance (bp)', ylab = 'Probability')
+axis(1, at = seq(-12,12,2)+12.5, labels = seq(-12,12,2))
+
+
+MoleculeCounts = MoleculeCounts[,c(0,1:3,4:5,6,9,10,7,8,11)+1]
+
+
+gLocs = t(matrix(unlist(strsplit(rownames(MoleculeCounts), ' ')), nrow=3))
+gLocs = data.frame(Chr = gLocs[,1], Pos = as.numeric(gLocs[,2]) + 4*as.numeric(gLocs[,3]), Dir = gLocs[,3])
+MuCountsF = MoleculeCounts[match(unique(apply(cbind(gLocs[,1:2],'1'), 1, paste, collapse='_')), apply(gLocs, 1, paste, collapse='_')),]
+MuCountsR = MoleculeCounts[match(unique(apply(cbind(gLocs[,1:2],'-1'), 1, paste, collapse='_')), apply(gLocs, 1, paste, collapse='_')),]
+MuCountsF[is.na(MuCountsF)] = 0
+rownames(MuCountsF) = gsub(' ', '', unique(apply(gLocs[,1:2], 1, paste, collapse='_')))
+MuCountsR[is.na(MuCountsR)] = 0
+rownames(MuCountsR) = gsub(' ', '', unique(apply(gLocs[,1:2], 1, paste, collapse='_')))
+
+
+sum(rowSums(((MuCountsR > 0) & (MuCountsF > 0))[,-c(1:4)]) > 0)  # number of sites sequenced from both ends
+sum(rowSums(((MuCountsR > 0) & (MuCountsF > 0))[,2:4]) > 0)  # number of sites sequenced from both ends
+
+
+
+MuCountsAll = (MuCountsR + MuCountsF)
+#MuCountsAll[MuCountsR >= 2*MuCountsF] = 2*MuCountsR[MuCountsR >= 2*MuCountsF]
+#MuCountsAll[MuCountsF >= 2*MuCountsR] = 2*MuCountsF[MuCountsF >= 2*MuCountsR]
+
+summary(diag(cor(MuCountsR[rowSums(MuCountsAll[,2:4]) < 100,], MuCountsF[rowSums(MuCountsAll[,2:4]) < 100,]))[-c(2:4)])
+
+
+
+plotReps = function(i) { plot(MuCountsF[,i]+1, MuCountsR[,i]+1, pch = 19, log = 'xy', col = c('black','red')[1+ (rowSums(MuCountsAll[,2:4]) >= 100)]) }
+
+par(mfrow = c(3,4))
+for (i in 1:ncol(MuCountsAll)) { plotReps(i) }
+
+
+MuCountsTrim = MuCountsAll*((MuCountsR > 0) & (MuCountsF > 0))
+HapCounts = NULL
+for (i in seq(5,11,2)) {
+	HapCounts = c(HapCounts, median(MuCountsTrim[(MuCountsTrim[,i] > 100) & (MuCountsTrim[,i+1] > 100),i]),
+median(MuCountsTrim[(MuCountsTrim[,i] > 100) & (MuCountsTrim[,i+1] > 100),i+1]))
+}
+HapCounts = c(HapCounts, median(MuCountsTrim[MuCountsTrim[,1] > 500,1]))
+MuCountsHap = sweep(MuCountsTrim[,c(5:12,1)], 2, HapCounts, '/')*100
+MuCountsHap[MuCountsTrim[,1] >= 800,9] = 0
+MuCountsHap = MuCountsHap[rowSums(MuCountsHap) > 0,]
+
+
+
+
+plotPMF = function(i, thresh = 25) {
+	X = MuCountsHap[rowSums(MuCountsHap > thresh) <= 1,i]
+	X = table(X)
+	X = X[length(X):2]
+	cbind(as.numeric(names(X)),as.numeric(cumsum(X)))
+}
+par(mfrow = c(1,2))
+plot(plotPMF(1), type='l', log = 'xy', xlim = c(.01,100), ylim = c(1,30000), xaxt = 'n', xlab = 'Cell divisions since zygote', ylab = 'Insertions at or before cell division')
+axis(1, at = 100/2^(1:15), labels = 1:15)
+for (i in seq(3,9,2)) { lines(plotPMF(i)) }
+for (i in seq(2,8,2)) { lines(plotPMF(i), col = 'red') }
+
+
+
+
+plot(plotPMF(3), type='p', log = 'xy', xlim = c(.01,100), ylim = c(1,30000), xaxt = 'n', xlab = 'Cell divisions since last common ancestor', ylab = 'Insertions at or before cell division')
+axis(1, at = 100/2^(1:15), labels = 1:15)
+lines(plotPMF(7))
+lines(plotPMF(9))
+lines(plotPMF(6), col = 'red')
+lines(plotPMF(10), col = 'red')
+
+###Modified PMF Plot###
+plot(plotPMF(11), type='p', log = 'xy', xlim = c(.01,100), ylim = c(1,30000), xaxt = 'n', xlab = 'UMI Abundance', ylab = 'Frequency')
+powerlaw3 = ggplot(data.frame(Pval=sapply(rowSums((MuCountsAll)), function(x) { sum(rowSums(MuCountsAll) > x) }),val=rowSums(MuCountsAll)), aes(x=val,y=Pval)) + geom_point() + scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10') + theme_classic()
+
+
+
+
+)#Showing relatedness among all samples, includes mu inactive 
+NMoleculeCounts = sweep(MoleculeCounts, 2, colSums(MoleculeCounts), '/')*10^6
+NMoleculeCounts = NMoleculeCounts[rowSums(NMoleculeCounts) >= 10,]
+colnames(NMoleculeCounts)=c("MuALeaf1","MuILeaf1","MuILeaf2","MuILeaf3","MuALeaf2","MuAPollen2","MuALeaf4","MuAPollen4","MuALeaf3","MuAPollen3","MuALeaf5","MuAPollen5")
+heatmap(cor(NMoleculeCounts))
+mats = rowMeans(NMoleculeCounts[,2:4]) > 1000
+heatmap(NMoleculeCounts[(rowMeans(NMoleculeCounts) > 400) & !mats,-c(2:4)],scale='none')
+
+#Pairwise correlation map of all 12 samples
+pairs(NMoleculeCounts[,c(1,2:4,5:6,7,8,9,10,12,11)], col = c('black','red')[mats+1], pch = c(19,1)[mats+1])
+
+
+NMuCountsAll=sweep(MuCountsAll, 2,colSums(MuCountsAll), '/')*10^6
+NMuCountsAll= NMuCountsAll[rowSums(NMuCountsAll) >= 10,]
+colnames(NMuCountsAll)=c("MuALeaf1","MuILeaf1","MuILeaf2","MuILeaf3","MuALeaf2","MuAPollen2","MuALeaf4","MuAPollen4","MuALeaf3","MuAPollen3","MuALeaf5","MuAPollen5")
+heatmap(cor(NMuCountsAll))
+mats = rowMeans(NMuCountsAll[,2:4]) > 1000
+heatmap(NMuCountsAll[(rowMeans(NMuCountsAll) > 400) & !mats,-c(2:4)],scale='none')
+NMuCountsAll1=NMuCountsAll[-c(2:4)]
+
+heatmap(NMuCountsAll1[(rowMeans(NMuCountsAll1) > 400),-c(1:3)],scale='none')
+
+ggextra
+
+#Plotting log transformed forward vs reverse detections
+plot=ggplot(ForRevnoM,aes(FnoM, RnoM))
+plot+geom_point()+scale_y_continuous(trans = 'log10')+scale_x_continuous(trans='log10')+ xlab('RightBorder')+ylab('LeftBorder')
