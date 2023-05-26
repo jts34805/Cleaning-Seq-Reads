@@ -1,5 +1,5 @@
 #in local terminal# /Desktop/Coding
-
+./anaconda3/bin/conda init zsh
 conda install -c bioconda genmap
 
 genmap index -F /Desktop/Coding/Zm* -I /Desktop/Coding/Index
