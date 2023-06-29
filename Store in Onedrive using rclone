@@ -1,0 +1,6 @@
+tmux
+rclone copy /home/jts34805/Rawdata storage:backup
+## node used for file transfer "xfer5"##
+control b 
+d
+tmux attach
