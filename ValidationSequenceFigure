@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=job    # Job name
+#SBATCH --partition=batch               # Partition (queue) name, i.e., highmem_p
+#SBATCH --ntasks=1                          # Run a single task
+#SBATCH --cpus-per-task=28                  # Number of CPU cores per task
+#SBATCH --mem=120gb                          # Job memory request
+#SBATCH --time=72:00:00                     # Time limit hrs:min:sec
+#SBATCH --output=file.out         # Standard output log
+#SBATCH --error=file.err          # Standard error log
+#SBATCH --mail-type=END,FAIL                # Mail events (NONE, BEGIN, END, FAIL, ALL)
+#SBATCH --mail-user=jts34805@uga.edu   # Where to send mail
+#SBATCH --export=NONE                       # do not load any env variables to compute node
+
+ml fastp
+
+fastp -i Justin_28E_S84_L004_R1_001.fastq.gz -o valseq.fastq.gz -A -l 34
+
+zcat valseq.fastq.gz | sed -n '2~4p' | awk '{print substr($0, 15, 20)}' > valseq.txt
+
+###output txt file is then put into R, follow code on MuCountsFigureBuilding (in onedrive)
