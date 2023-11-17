@@ -14,9 +14,10 @@
 cd $SLURM_SUBMIT_DIR
 
 ml fastp
-cat read2/* > Bonnvalseq.fastq.gz 
-fastp -i  -o Bonnvalseq.fastq.gz -A -l 35
+cp *_2* read2
+cat read2/* > read2/Bonnvalseq.fastq.gz
+fastp -i  -o read2/Bonnvalseq.fastq.gz -A -l 35
 
-zcat valseq.fastq.gz | sed -n '2~4p' | awk '{print substr($0, 20, 15)}' > valseq.txt
+zcat Bonnvalseq.fastq.gz | sed -n '2~4p' | awk '{print substr($0, 20, 15)}' > valseq.txt
 
 ###output txt file is then put into R, follow code on MuCountsFigureBuilding (in onedrive)
