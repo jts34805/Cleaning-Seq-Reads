@@ -11,6 +11,8 @@
 #SBATCH --mail-user=jts34805@uga.edu   # Where to send mail
 #SBATCH --export=NONE                       # do not load any env variables to compute node
 
+cd $SLURM_SUBMIT_DIR
+
 ml fastp
 cat read2/* > Bonnvalseq.fastq.gz 
 fastp -i  -o Bonnvalseq.fastq.gz -A -l 35
